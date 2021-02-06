@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 
 using ZenLib.Tests.Network;
+using ZenLib;
+using static ZenLib.Language;
 
 
 /// <summary>
@@ -114,11 +116,7 @@ namespace ZenRouting
 					}
                 }
             }
-
         }
-
-
-		
 
 		/// <summary>
 		/// 
@@ -157,6 +155,16 @@ namespace ZenRouting
             }
         }
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="src">Index to the nodes list</param>
+		/// <param name="dst">Index to the nodes list</param>
+		/// <returns></returns>
+		public Zen<bool> Forward(Zen<int> src, Zen<int> dst)
+        {
+			
+        }
 
 
 		public override String ToString()
