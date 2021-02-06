@@ -65,7 +65,7 @@ namespace ZenRouting
 			this.edges = new HashSet<Tuple<int, int>>();
 			for (int i = 0; i < count; i++)
 			{
-				this.nodes.Add(new Node { Address = new Ip { Value = (uint)i } });
+				this.nodes.Add(new Node { Address = new Ip { Value = (uint)i } , RoutingTable = new List<Route>()});
 			}
 		}
 
@@ -116,6 +116,8 @@ namespace ZenRouting
             }
 
         }
+
+
 		
 
 		/// <summary>
