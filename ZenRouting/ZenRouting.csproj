@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ZenLibBench\ZenLibBench.csproj" />
+    <ProjectReference Include="..\ZenLibTests\ZenLibTests.csproj" />
     <ProjectReference Include="..\ZenLib\ZenLib.csproj" />
   </ItemGroup>
 

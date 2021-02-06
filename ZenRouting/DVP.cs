@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using ZenLib.Tests.Network;
+
 
 /// <summary>
 /// Distance Vector Protocol
@@ -15,13 +17,17 @@ namespace ZenRouting
 
 		public DVP(int numNodes)
 		{
+			/*
 			this.nodes = new List<Node>();
 			for (int i = 0; i < numNodes; i++)
             {
-				this.nodes.Add(new Node(i));
+				this.nodes.Add(new Node { Address = new Ip { Value = i} });
             }
 
-			this.edges = new HashSet<Tuple<int, int>>();
+			this.edges = new HashSet<Tuple<Ip, Ip>>();
+			*/
+
+			init(numNodes);
 		}
 
 		public DVP(List<Tuple<int, int>> physicalEdges)
@@ -34,12 +40,15 @@ namespace ZenRouting
 				edgeNodes.Add(j);
 			}
 
+			/*
 			this.nodes = new List<Node>();
-			this.edges = new HashSet<Tuple<int, int>>();
+			this.edges = new HashSet<Tuple<Ip, Ip>>();
 			for (int i = 0; i < edgeNodes.Count; i++)
 			{
-				this.nodes.Add(new Node(i));
+				this.nodes.Add(new Node { Address = new Ip { Value = i } });
 			}
+			*/
+			init(edgeNodes.Count);
 
 			foreach (Tuple<int, int> r in physicalEdges)
 			{
@@ -48,6 +57,16 @@ namespace ZenRouting
 			}
 
 			this.initializeRoutingTables();
+		}
+
+		private void init(int count)
+        {
+			this.nodes = new List<Node>();
+			this.edges = new HashSet<Tuple<int, int>>();
+			for (int i = 0; i < count; i++)
+			{
+				this.nodes.Add(new Node { Address = new Ip { Value = (uint)i } });
+			}
 		}
 
 		public void initializeRoutingTables()
@@ -63,15 +82,35 @@ namespace ZenRouting
                     {
 						continue;
                     }
+
+					Route r_ij = new Route
+					{
+						Destination = nodes[j].Address,
+						NextHop = nodes[j].Address,
+						Cost = 1,
+						TTL = GlobalVar.MAX_TTL
+					};
+					Route r_ji = new Route
+					{
+						Destination = nodes[i].Address,
+						NextHop = nodes[i].Address,
+						Cost = 1,
+						TTL = GlobalVar.MAX_TTL
+					};
+
 					if (edges.Contains(new Tuple<int, int>(i, j)))
                     {
-						nodes[i].MergeRoute(new Route(j, j, 1, GlobalVar.MAX_TTL));
-						nodes[j].MergeRoute(new Route(i, i, 1, GlobalVar.MAX_TTL));
+						nodes[i].MergeRoute(r_ij);
+						nodes[j].MergeRoute(r_ji);
 					}
 					else
                     {
-						nodes[i].MergeRoute(new Route(j, -1, GlobalVar.MAX_HOPS, GlobalVar.MAX_TTL));
-						nodes[j].MergeRoute(new Route(i, -1, GlobalVar.MAX_HOPS, GlobalVar.MAX_TTL));
+						r_ij.NextHop = GlobalVar.NULL_IP;
+						r_ij.Cost = GlobalVar.MAX_HOPS;
+						r_ji.NextHop = GlobalVar.NULL_IP;
+						r_ji.Cost = GlobalVar.MAX_HOPS;
+						nodes[i].MergeRoute(r_ij);
+						nodes[j].MergeRoute(r_ji);
 					}
                 }
             }
@@ -98,7 +137,7 @@ namespace ZenRouting
 				var updatedNodes = new List<Node>();
 				foreach (Node n in this.nodes)
                 {
-					updatedNodes.Add(new Node(n));
+					updatedNodes.Add(new Node { Address = n.Address, RoutingTable = new List<Route>(n.RoutingTable) });
                 }
 
 				foreach (Tuple<int, int> edge in this.edges)

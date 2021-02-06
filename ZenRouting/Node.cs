@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using ZenLib;
+using static ZenLib.Language;
+
+using ZenLib.Tests.Network;
 
 namespace ZenRouting
 {
@@ -7,9 +11,10 @@ namespace ZenRouting
     public class Node
     {
         // address of this node
-        int Address;
-        List<Route> RoutingTable;
+        public Ip Address { get; set; }
+        public List<Route> RoutingTable { get; set; }
 
+        /*
         public Node(int address)
         {
             this.Address = address;
@@ -27,11 +32,13 @@ namespace ZenRouting
             this.Address = n.Address;
             this.RoutingTable = new List<Route>(n.RoutingTable);
         }
+        */
 
         public void MergeRoute(Route newRoute)
         {
 
-            if (newRoute.Destination == this.Address)
+            if (newRoute.Destination.Equals(this.Address))
+
             {
                 // CHANGED: so that we don't go to ourselves
                 return;
@@ -41,23 +48,24 @@ namespace ZenRouting
             for (i = 0; i < RoutingTable.Count; i++)
             {
                 Route currRoute = RoutingTable[i];
-                if (newRoute.Destination == currRoute.Destination)
+                if (newRoute.Destination.Equals(currRoute.Destination))
                 {
                     if (newRoute.Cost + 1 < currRoute.Cost)
                         break;
-                    else if (newRoute.NextHop == currRoute.NextHop)
+                    else if (newRoute.NextHop.Equals(currRoute.NextHop))
                         break;
                     else
                         return;
                 }
             }
+
             if (i == RoutingTable.Count)
             {
                 // this is a new route
-                RoutingTable.Add(new Route(newRoute));
+                RoutingTable.Add(newRoute);
             } else
             {
-                RoutingTable[i] = new Route(newRoute);
+                RoutingTable[i] = newRoute;
                 RoutingTable[i].TTL = GlobalVar.MAX_TTL;
 
                 if (RoutingTable[i].Cost < GlobalVar.MAX_HOPS)
@@ -81,8 +89,13 @@ namespace ZenRouting
             List<Route> routesToSend = new List<Route>();
             foreach (Route currRoute in this.RoutingTable)
             {
-                Route currSendRoute = new Route(currRoute);
-                currSendRoute.NextHop = this.Address;
+                Route currSendRoute = new Route
+                {
+                    Destination = currRoute.Destination,
+                    NextHop = this.Address,
+                    Cost = currRoute.Cost,
+                    TTL = currRoute.TTL,
+                };
                 routesToSend.Add(currSendRoute);
             }
             return routesToSend;
