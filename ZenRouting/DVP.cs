@@ -13,7 +13,7 @@ namespace ZenRouting
 {
 	public class DVP
 	{
-		List<Node> nodes;
+		public List<Node> nodes;
 		// int is the index to nodes
 		HashSet<Tuple<int, int>> edges;
 
@@ -155,16 +155,30 @@ namespace ZenRouting
             }
         }
 
+		/*public Zen<bool> Forward(Zen<int> src, Zen<int> dst)
+        {
+			return Forward(this.nodes[src].Address, this.nodes[dst].Address);
+        }*/
+
 		/// <summary>
 		/// 
 		/// </summary>
 		/// <param name="src">Index to the nodes list</param>
 		/// <param name="dst">Index to the nodes list</param>
 		/// <returns></returns>
-		public Zen<bool> Forward(Zen<int> src, Zen<int> dst)
-        {
-			
-        }
+		public Zen<bool> Forward(Zen<Ip> src, Zen<Ip> dst)
+		{
+			var currFoundNextHop = False();
+			// find next hop
+			for (int i = 0; i < this.nodes.Count; i++)
+            {
+				var currNode = this.nodes[i];
+				// currFoundNextHop = Or(src == currNode.Address, currFoundNextHop);
+				currFoundNextHop = Or(If(src == currNode.Address, currNode.hasNextHop(dst), False()), currFoundNextHop);
+			}
+
+			return currFoundNextHop;
+		}
 
 
 		public override String ToString()

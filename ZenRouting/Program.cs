@@ -6,6 +6,7 @@ namespace ZenRouting
     using static ZenLib.Language;
     using ZenLib.ModelChecking;
     using System.Collections.Generic;
+    using ZenLib.Tests.Network;
     class Program
     {
 
@@ -65,7 +66,20 @@ namespace ZenRouting
             dvp.runDVP(5);
             Console.WriteLine(dvp);
 
+            // ZenFunction<Ip, Ip, bool> f = Function<Ip, Ip, bool>(dvp.Forward);
+            ZenFunction<Ip, Ip, bool> f = Function<Ip, Ip, bool>(dvp.Forward);
+            var srcAddr = new Ip { Value = 1 };
+            var dstAddr = new Ip { Value = 2 };
+            var output = f.Evaluate(srcAddr, dstAddr);
+            Console.WriteLine("Found it!!!!!");
+            Console.WriteLine(output);
 
+            // var input = function.Find((x, y, result) => And(x <= 0, result == 11));
+
+            var input = f.Find((src, dst, result) => And(And(And(src.GetField<Ip, uint>("Value") < 7,
+                dst.GetField<Ip, uint>("Value") < 7), result == False()), src != dst)) ;
+            Console.WriteLine("Using powerful Zen Find!!!");
+            Console.WriteLine(input.Value);
         }
     }
 }

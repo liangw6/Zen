@@ -101,6 +101,18 @@ namespace ZenRouting
             return routesToSend;
         }
 
+        public Zen<bool> hasNextHop(Zen<Ip> dst)
+        {
+            Zen<bool> currFoundNextHop = False();
+
+            for (int i = 0; i < RoutingTable.Count; i++)
+            {
+                currFoundNextHop = Or(RoutingTable[i].Destination == dst, currFoundNextHop);
+            }
+
+            return currFoundNextHop;
+        }
+
         public override string ToString()
         {
             var output = "Address: " + this.Address + "\n"; 
