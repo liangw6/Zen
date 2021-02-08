@@ -7,6 +7,8 @@ namespace ZenRouting
     using ZenLib.ModelChecking;
     using System.Collections.Generic;
     using ZenLib.Tests.Network;
+    using System.Linq;
+
     class Program
     {
 
@@ -77,9 +79,24 @@ namespace ZenRouting
             // var input = function.Find((x, y, result) => And(x <= 0, result == 11));
 
             var input = f.Find((src, dst, result) => And(And(And(src.GetField<Ip, uint>("Value") < 7,
-                dst.GetField<Ip, uint>("Value") < 7), result == False()), src != dst)) ;
+                dst.GetField<Ip, uint>("Value") < 7), result == False()), src != dst));
             Console.WriteLine("Using powerful Zen Find!!!");
+
+            Console.WriteLine(input);
             Console.WriteLine(input.Value);
+
+            /*
+            Console.WriteLine("Count: ");
+            Console.WriteLine(input.Count());
+
+            foreach (var x in input)
+            {
+                Console.WriteLine(x);
+            }*/
+
+            // Console.WriteLine(input.Take(5));
+
+
         }
     }
 }
