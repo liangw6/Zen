@@ -113,6 +113,18 @@ namespace ZenRouting
             return currFoundNextHop;
         }
 
+        public Zen<Ip> getNextHop(Zen<Ip> dst)
+        {
+            Zen<Ip> nextHop = GlobalVar.Z_NULL_IP;
+
+            for (int i = 0; i < RoutingTable.Count; i++)
+            {
+                nextHop = If(RoutingTable[i].Destination == dst, RoutingTable[i].NextHop, nextHop);
+            }
+
+            return nextHop;
+        }
+
         public override string ToString()
         {
             var output = "Address: " + this.Address + "\n"; 

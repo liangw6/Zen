@@ -166,7 +166,7 @@ namespace ZenRouting
 		/// <param name="src">Index to the nodes list</param>
 		/// <param name="dst">Index to the nodes list</param>
 		/// <returns></returns>
-		public Zen<bool> Forward(Zen<Ip> src, Zen<Ip> dst)
+		public Zen<bool> OneHopForward(Zen<Ip> src, Zen<Ip> dst)
 		{
 			var currFoundNextHop = False();
 			// find next hop
@@ -175,6 +175,47 @@ namespace ZenRouting
 				var currNode = this.nodes[i];
 				// currFoundNextHop = Or(src == currNode.Address, currFoundNextHop);
 				currFoundNextHop = Or(If(src == currNode.Address, currNode.hasNextHop(dst), False()), currFoundNextHop);
+			}
+
+			return currFoundNextHop;
+		}
+
+		public Zen<bool> Forward(Zen<Ip> src, Zen<Ip> dst)
+        {
+			// nextHop should be gathered from src node
+			//Console.WriteLine("F: {0}", src == dst);
+			//Console.WriteLine("F: {0}, {1}", src.GetField<Ip, uint>("Value"), dst.GetField<Ip, uint>("Value"));
+			//Console.WriteLine();
+
+
+
+			return ForwardWithCost(src, dst, 2);
+        }
+
+		public Zen<bool> ForwardWithCost(Zen<Ip> src, Zen<Ip> dst, int cost)
+        {
+			if (cost < 0)
+            {
+				return False();
+            }
+
+			return If(src == dst, True(), ForwardHelper(src, dst, cost));
+		}
+
+		private Zen<bool> ForwardHelper(Zen<Ip> src, Zen<Ip> dst, int cost)
+        {
+			var currFoundNextHop = False();
+			// find next hop
+			
+			for (int i = 0; i < this.nodes.Count; i++)
+			{
+				var currNode = this.nodes[i]; // currNode is src
+											  // currFoundNextHop = Or(src == currNode.Address, currFoundNextHop);
+				//Console.WriteLine(src == currNode.Address);
+				//Console.WriteLine("FH: ", src == currNode.Address, src.GetField<Ip, uint>("Value"), currNode.Address);
+				//Console.WriteLine();
+
+				currFoundNextHop = Or(If(src == currNode.Address, ForwardWithCost(currNode.getNextHop(dst), dst, cost-1), False()), currFoundNextHop);
 			}
 
 			return currFoundNextHop;
