@@ -131,7 +131,7 @@ namespace ZenRouting
             Zen<bool> hasPath = False();
             foreach (Route r in RoutingTable)
             {
-                hasPath = Or(And(r.NextHop == nextHop, r.Cost == 1), hasPath);
+                hasPath = Or(And(r.NextHop == nextHop, r.Destination = PacketExtensions.GetOverlayHeader().), hasPath);
             }
             return If(hasPath, Some(p), Null<Packet>());
         }
