@@ -14,6 +14,7 @@ namespace ZenRouting
         public Ip Address { get; set; }
         public List<Route> RoutingTable { get; set; }
 
+
         /*
         public Node(int address)
         {
@@ -123,6 +124,16 @@ namespace ZenRouting
             }
 
             return nextHop;
+        }
+
+        public Zen<Option<Packet>> ForwardInAndOut(Zen<Packet> p, Zen<Ip> nextHop)
+        {
+            Zen<bool> hasPath = False();
+            foreach (Route r in RoutingTable)
+            {
+                hasPath = Or(And(r.NextHop == nextHop, r.Cost == 1), hasPath);
+            }
+            return If(hasPath, Some(p), Null<Packet>());
         }
 
         public override string ToString()

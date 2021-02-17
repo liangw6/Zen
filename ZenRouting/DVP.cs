@@ -180,18 +180,43 @@ namespace ZenRouting
 			return currFoundNextHop;
 		}
 
-		public Zen<bool> Forward(Zen<Ip> src, Zen<Ip> dst)
+		public Zen<Boolean> Forward(Zen<Packet> p)
         {
-			// nextHop should be gathered from src node
-			//Console.WriteLine("F: {0}", src == dst);
-			//Console.WriteLine("F: {0}, {1}", src.GetField<Ip, uint>("Value"), dst.GetField<Ip, uint>("Value"));
-			//Console.WriteLine();
+			HashSet<List<int>> pathSet = new HashSet<List<int>>();
+			/*foreach (Node i in nodes)
+            {
+				foreach (Node j in nodes)
+                {
+					if (i.RoutingTable.Contains(j))
+                    {
+						// Find a single path
+                    }
+                }
+            }*/
+			var a = new List<int>() { 1, 2 };
+			pathSet.Add(a);
 
-
-
-			return ForwardWithCost(src, dst, 2);
+			Zen<Boolean> forwardSuccess = False();
+			foreach (List<int> path in pathSet)
+            {
+				forwardSuccess = Or(forwardSuccess, Forward(path.ToArray(), p).HasValue());
+			}
+			return forwardSuccess;
         }
 
+
+		public Zen<Option<Packet>> Forward(int[] path, Zen<Packet> p)
+        {
+			Zen<Option<Packet>> x = Some(p);
+			for (int i = 0; i < path.Length - 1; i++)
+            {
+				x = If(x.HasValue(), nodes[i].ForwardInAndOut(x.Value(), nodes[i + 1].Address), x);
+            }
+			return x;
+        }
+
+
+		/*
 		public Zen<bool> ForwardWithCost(Zen<Ip> src, Zen<Ip> dst, int cost)
         {
 			if (cost < 0)
@@ -219,7 +244,7 @@ namespace ZenRouting
 			}
 
 			return currFoundNextHop;
-		}
+		}*/
 
 
 		public override String ToString()

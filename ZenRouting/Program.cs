@@ -68,14 +68,15 @@ namespace ZenRouting
             dvp.runDVP(5);
             Console.WriteLine(dvp);
 
-            ZenFunction<Ip, Ip, bool> f = Function<Ip, Ip, bool>(dvp.Forward);
+            ZenFunction<Packet, bool> f = Function<Packet , bool>(dvp.Forward);
             // ZenFunction<Ip, Ip, bool> f = Function<Ip, Ip, bool>(dvp.OneHopForward);
             var srcAddr = new Ip { Value = 1 };
             var dstAddr = new Ip { Value = 2 };
             f.Compile();
-            var output = f.Evaluate(srcAddr, dstAddr);
+            var input = f.FindAll((pkt, result) => True());
+            //var output = f.Evaluate(srcAddr, dstAddr);
             Console.WriteLine("Found it!!!!!");
-            Console.WriteLine(output);
+            Console.WriteLine(input);
 
             // var input = function.Find((x, y, result) => And(x <= 0, result == 11));
 
@@ -89,11 +90,12 @@ namespace ZenRouting
             /*
             Console.WriteLine("Count: ");
             Console.WriteLine(input.Count());
+            */
 
             foreach (var x in input)
             {
                 Console.WriteLine(x);
-            }*/
+            }
 
             // Console.WriteLine(input.Take(5));
 
