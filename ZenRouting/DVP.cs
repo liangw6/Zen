@@ -204,7 +204,6 @@ namespace ZenRouting
 						currRoute.Add(i);
 
 						var currCost = 0;
-						var crossIntermediateNode = false;
 						while (nextHopIp.Value != GlobalVar.NULL_IP.Value &&
 							nextHopIp.Value != nodes[j].Address.Value)
                         {
@@ -212,14 +211,7 @@ namespace ZenRouting
 							nextHopIp = nodes[(int)nextHopIp.Value].getNextHop(nodes[j].Address);
 
 							currCost += 1;
-							if (nextHopIp.Value == this.intermediateNode.Value)
-                            {
-								crossIntermediateNode = true;
-                            }
 						}
-
-						crossIntermediateNode |= nodes[i].Address.Value == this.intermediateNode.Value;
-						crossIntermediateNode |= nodes[j].Address.Value == this.intermediateNode.Value;
 
 						currRoute.Add(j);
 
