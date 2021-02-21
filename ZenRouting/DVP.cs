@@ -222,9 +222,9 @@ namespace ZenRouting
 
 				
 			}
-			Console.WriteLine("Final Expression:");
-			Console.WriteLine(forwardSuccess);
-			Console.WriteLine();
+			//Console.WriteLine("Final Expression:");
+			//Console.WriteLine(forwardSuccess);
+			//Console.WriteLine();
 			return forwardSuccess;
         }
 
