@@ -180,37 +180,63 @@ namespace ZenRouting
 			return currFoundNextHop;
 		}
 
-		public Zen<Boolean> Forward(Zen<Packet> p)
+		public Zen<Boolean> Forward(Zen<SimplePacket> p)
         {
 			HashSet<List<int>> pathSet = new HashSet<List<int>>();
-			/*foreach (Node i in nodes)
+			for (int i = 0; i < nodes.Count; i++)
             {
-				foreach (Node j in nodes)
+				for (int j = 0; j < nodes.Count; j++)
                 {
-					if (i.RoutingTable.Contains(j))
+					var nextHopIp = nodes[i].getNextHop(nodes[j].Address);
+					if (nextHopIp.Value != GlobalVar.NULL_IP.Value)
                     {
-						// Find a single path
-                    }
+						// there is a route
+						List<int> currRoute = new List<int>();
+						currRoute.Add(i);
+
+
+						while (nextHopIp.Value != GlobalVar.NULL_IP.Value &&
+							nextHopIp.Value != nodes[j].Address.Value)
+                        {
+							currRoute.Add((int)nextHopIp.Value);
+							nextHopIp = nodes[(int)nextHopIp.Value].getNextHop(nodes[j].Address);
+                        }
+
+
+						currRoute.Add(j);
+						pathSet.Add(currRoute);
+					}
                 }
-            }*/
-			var a = new List<int>() { 1, 2 };
-			pathSet.Add(a);
+            }
+			//var a = new List<int>() { 1, 2 };
+			//pathSet.Add(a);
 
 			Zen<Boolean> forwardSuccess = False();
 			foreach (List<int> path in pathSet)
             {
-				forwardSuccess = Or(forwardSuccess, Forward(path.ToArray(), p).HasValue());
+				var startNode = nodes[path[0]];
+				var endNode = nodes[path[path.Count - 1]];
+				forwardSuccess = If(And(p.GetSrcIp() == startNode.Address, p.GetDstIp() == endNode.Address),
+					Forward(path.ToArray(), p).HasValue(),
+					forwardSuccess);
+
+				
 			}
+			Console.WriteLine("Final Expression:");
+			Console.WriteLine(forwardSuccess);
+			Console.WriteLine();
 			return forwardSuccess;
         }
 
 
-		public Zen<Option<Packet>> Forward(int[] path, Zen<Packet> p)
+		public Zen<Option<SimplePacket>> Forward(int[] path, Zen<SimplePacket> p)
         {
-			Zen<Option<Packet>> x = Some(p);
+			Zen<Option<SimplePacket>> x = Some(p);
 			for (int i = 0; i < path.Length - 1; i++)
             {
-				x = If(x.HasValue(), nodes[i].ForwardInAndOut(x.Value(), nodes[i + 1].Address), x);
+				var currNode = nodes[path[i]];
+				var nextNode = nodes[path[i + 1]];
+				x = If(x.HasValue(), currNode.ForwardInAndOut(x.Value(), nextNode.Address), x);
             }
 			return x;
         }

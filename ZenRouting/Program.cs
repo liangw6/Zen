@@ -68,15 +68,17 @@ namespace ZenRouting
             dvp.runDVP(5);
             Console.WriteLine(dvp);
 
-            ZenFunction<Packet, bool> f = Function<Packet , bool>(dvp.Forward);
+            ZenFunction<SimplePacket, bool> f = Function<SimplePacket , bool>(dvp.Forward);
             // ZenFunction<Ip, Ip, bool> f = Function<Ip, Ip, bool>(dvp.OneHopForward);
-            var srcAddr = new Ip { Value = 1 };
-            var dstAddr = new Ip { Value = 2 };
+            //var srcAddr = new Ip { Value = 1 };
+            //var dstAddr = new Ip { Value = 2 };
+            Console.WriteLine("Before Compile");
             f.Compile();
-            var input = f.FindAll((pkt, result) => True());
+            Console.WriteLine("Before FindAll()");
+            var input = f.FindAll((pkt, result) => (result == true));
             //var output = f.Evaluate(srcAddr, dstAddr);
             Console.WriteLine("Found it!!!!!");
-            Console.WriteLine(input);
+
 
             // var input = function.Find((x, y, result) => And(x <= 0, result == 11));
 
@@ -85,17 +87,43 @@ namespace ZenRouting
             //Console.WriteLine("Using powerful Zen Find!!!");
 
             //Console.WriteLine(input);
+            //Console.WriteLine("printing single value");
             //Console.WriteLine(input.Value);
 
-            /*
+            Console.WriteLine("Evaluating output");
+
+            var correct_input = new SimplePacket
+            {
+                SrcIp = new Ip { Value = 1 },
+                DstIp = new Ip { Value = 2 },
+            };
+
+            var wrong_input = new SimplePacket
+            {
+                SrcIp = new Ip { Value = 0 },
+                DstIp = new Ip { Value = 0 },
+            };
+
+            Console.WriteLine("Evaluating correct input");
+            var output = f.Evaluate(correct_input);
+            Console.WriteLine(output);
+
+            Console.WriteLine("Evaluating wrong input");
+            output = f.Evaluate(wrong_input);
+            Console.WriteLine(output);
+
             Console.WriteLine("Count: ");
             Console.WriteLine(input.Count());
-            */
+            //Console.WriteLine();
 
+            
+            Console.WriteLine(input);
+            Console.WriteLine("Printing inputs:");
             foreach (var x in input)
             {
                 Console.WriteLine(x);
             }
+            
 
             // Console.WriteLine(input.Take(5));
 

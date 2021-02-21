@@ -126,14 +126,26 @@ namespace ZenRouting
             return nextHop;
         }
 
-        public Zen<Option<Packet>> ForwardInAndOut(Zen<Packet> p, Zen<Ip> nextHop)
+        public Ip getNextHop(Ip dstIp)
+        {
+            foreach (Route currRoute in this.RoutingTable)
+            {
+                if (currRoute.Destination.Value == dstIp.Value)
+                {
+                    return currRoute.NextHop;
+                }
+            }
+            return GlobalVar.NULL_IP;
+        } 
+
+        public Zen<Option<SimplePacket>> ForwardInAndOut(Zen<SimplePacket> p, Zen<Ip> nextHop)
         {
             Zen<bool> hasPath = False();
             foreach (Route r in RoutingTable)
             {
-                hasPath = Or(And(r.NextHop == nextHop, r.Destination = PacketExtensions.GetOverlayHeader().), hasPath);
+                hasPath = Or(r.NextHop == nextHop, hasPath);
             }
-            return If(hasPath, Some(p), Null<Packet>());
+            return If(hasPath, Some(p), Null<SimplePacket>());
         }
 
         public override string ToString()
