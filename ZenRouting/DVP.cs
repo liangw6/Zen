@@ -17,6 +17,9 @@ namespace ZenRouting
 		// int is the index to nodes
 		HashSet<Tuple<int, int>> edges;
 
+		public int maxCost = GlobalVar.MAX_HOPS;
+		public Ip intermediateNode = GlobalVar.NULL_IP;
+
 		public DVP(int numNodes)
 		{
 			/*
@@ -69,6 +72,12 @@ namespace ZenRouting
 			{
 				this.nodes.Add(new Node { Address = new Ip { Value = (uint)i } , RoutingTable = new List<Route>()});
 			}
+		}
+
+		public void cleanConstraints()
+        {
+			maxCost = GlobalVar.MAX_HOPS;
+			intermediateNode = GlobalVar.NULL_IP;
 		}
 
 		public void initializeRoutingTables()
@@ -194,17 +203,32 @@ namespace ZenRouting
 						List<int> currRoute = new List<int>();
 						currRoute.Add(i);
 
-
+						var currCost = 0;
+						var crossIntermediateNode = false;
 						while (nextHopIp.Value != GlobalVar.NULL_IP.Value &&
 							nextHopIp.Value != nodes[j].Address.Value)
                         {
 							currRoute.Add((int)nextHopIp.Value);
 							nextHopIp = nodes[(int)nextHopIp.Value].getNextHop(nodes[j].Address);
-                        }
 
+							currCost += 1;
+							if (nextHopIp.Value == this.intermediateNode.Value)
+                            {
+								crossIntermediateNode = true;
+                            }
+						}
+
+						crossIntermediateNode |= nodes[i].Address.Value == this.intermediateNode.Value;
+						crossIntermediateNode |= nodes[j].Address.Value == this.intermediateNode.Value;
 
 						currRoute.Add(j);
-						pathSet.Add(currRoute);
+
+						if (currCost < this.maxCost && !currRoute.Contains((int)this.intermediateNode.Value))
+						{
+							
+							pathSet.Add(currRoute);
+							Console.WriteLine("Adding path " + nodes[i].Address + " " + nodes[j].Address);
+						}
 					}
                 }
             }

@@ -95,6 +95,20 @@ namespace ZenRouting
             }
         }
 
+        static void fullPathReachabilityWithCost(DVP dvp, int maxCost)
+        {
+            dvp.maxCost = maxCost;
+            fullPathReachability(dvp);
+            dvp.cleanConstraints();
+        }
+
+        static void fullPathReachabilityWithoutCrossingNode(DVP dvp, Ip intermediateNodeIp)
+        {
+            dvp.intermediateNode = intermediateNodeIp;
+            fullPathReachability(dvp);
+            dvp.cleanConstraints();
+        }
+
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
@@ -141,7 +155,8 @@ namespace ZenRouting
             dvp.runDVP(5);
             Console.WriteLine(dvp);
 
-            fullPathReachability(dvp);
+            //fullPathReachabilityWithCost(dvp, maxCost: 2);
+            fullPathReachabilityWithoutCrossingNode(dvp, new Ip { Value = 0 });
         }
     }
 }
