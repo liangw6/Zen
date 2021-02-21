@@ -70,12 +70,16 @@ namespace ZenRouting
 
             ZenFunction<SimplePacket, bool> f = Function<SimplePacket , bool>(dvp.Forward);
             // ZenFunction<Ip, Ip, bool> f = Function<Ip, Ip, bool>(dvp.OneHopForward);
-            //var srcAddr = new Ip { Value = 1 };
-            //var dstAddr = new Ip { Value = 2 };
-            Console.WriteLine("Before Compile");
             f.Compile();
-            Console.WriteLine("Before FindAll()");
-            var input = f.FindAll((pkt, result) => (result == true));
+            var input = f.FindAll((pkt, result) => And(
+                And(
+                    And(
+                    pkt.GetDstIp().GetField<Ip, uint>("Value") < 7,
+                    pkt.GetSrcIp().GetField<Ip, uint>("Value") < 7
+                    ),
+                    pkt.GetDstIp() != pkt.GetSrcIp()
+                ),
+                result == false));
             //var output = f.Evaluate(srcAddr, dstAddr);
             Console.WriteLine("Found it!!!!!");
 
@@ -89,7 +93,7 @@ namespace ZenRouting
             //Console.WriteLine(input);
             //Console.WriteLine("printing single value");
             //Console.WriteLine(input.Value);
-
+            /*
             Console.WriteLine("Evaluating output");
 
             var correct_input = new SimplePacket
@@ -111,7 +115,7 @@ namespace ZenRouting
             Console.WriteLine("Evaluating wrong input");
             output = f.Evaluate(wrong_input);
             Console.WriteLine(output);
-
+            */
             Console.WriteLine("Count: ");
             Console.WriteLine(input.Count());
             //Console.WriteLine();
