@@ -189,8 +189,9 @@ namespace ZenRouting
 			return currFoundNextHop;
 		}
 
-		public Zen<Boolean> Forward(Zen<SimplePacket> p)
+		public Zen<Boolean> Forward(Zen<SimplePacket> p, Zen<IList<Tuple<int, int>>> failedLinks)
         {
+			// path generation
 			HashSet<List<int>> pathSet = new HashSet<List<int>>();
 			for (int i = 0; i < nodes.Count; i++)
             {
@@ -227,13 +228,14 @@ namespace ZenRouting
 			//var a = new List<int>() { 1, 2 };
 			//pathSet.Add(a);
 
+			// forwarding w/ Zen
 			Zen<Boolean> forwardSuccess = False();
 			foreach (List<int> path in pathSet)
             {
 				var startNode = nodes[path[0]];
 				var endNode = nodes[path[path.Count - 1]];
 				forwardSuccess = If(And(p.GetSrcIp() == startNode.Address, p.GetDstIp() == endNode.Address),
-					Forward(path.ToArray(), p).HasValue(),
+					Forward(path.ToArray(), p, failedLinks).HasValue(),
 					forwardSuccess);
 
 				
@@ -245,14 +247,17 @@ namespace ZenRouting
         }
 
 
-		public Zen<Option<SimplePacket>> Forward(int[] path, Zen<SimplePacket> p)
+		public Zen<Option<SimplePacket>> Forward(int[] path, Zen<SimplePacket> p, Zen<IList<Tuple<int, int>>> failedLinks)
         {
 			Zen<Option<SimplePacket>> x = Some(p);
 			for (int i = 0; i < path.Length - 1; i++)
             {
 				var currNode = nodes[path[i]];
 				var nextNode = nodes[path[i + 1]];
-				x = If(x.HasValue(), currNode.ForwardInAndOut(x.Value(), nextNode.Address), x);
+
+				// want to use path[i], path[i+1] to check failedLinks to see if link between them is failed. Use this condition to set x
+				var linkOK = Not(Or(failedLinks.Contains(new Tuple<int, int>(path[i], path[i+1])), failedLinks.Contains(new Tuple<int, int>(path[i+1], path[i]))));
+				x = If(And(x.HasValue(), linkOK), currNode.ForwardInAndOut(x.Value(), nextNode.Address), x);
             }
 			return x;
         }

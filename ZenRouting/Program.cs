@@ -40,9 +40,9 @@ namespace ZenRouting
             Console.WriteLine(input.Value);
         }
 
-        static void fullPathReachability(DVP dvp)
+        static void fullPathReachability(DVP dvp, Zen<IList<Tuple<int, int>>> failedLinks)
         {
-            ZenFunction<SimplePacket, bool> f = Function<SimplePacket, bool>(dvp.Forward);
+            ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
             f.Compile();
 
             // 1. Evaluate
@@ -60,26 +60,27 @@ namespace ZenRouting
             };
 
             Console.WriteLine("Evaluating correct input: \t" + correct_input);
-            var output = f.Evaluate(correct_input);
+            var output = f.Evaluate(correct_input, new List<Tuple<int, int>>());
             Console.WriteLine("\t Reachable? " + output);
 
             Console.WriteLine("Evaluating wrong input: \t" + wrong_input);
-            output = f.Evaluate(wrong_input);
+            output = f.Evaluate(wrong_input, new List<Tuple<int, int>>());
             Console.WriteLine("\t Reachable? " + output);
             Console.WriteLine();
 
             // 2. FindAll
             Console.WriteLine("Using FindAll");
             Console.WriteLine("Number of packets that cannot be delivered in the network:");
-            var input = f.FindAll((pkt, result) => And(
+            var input = f.FindAll((pkt, failed_links, result) => And(
                 And(
+                    And(
                     And(
                     pkt.GetDstIp().GetField<Ip, uint>("Value") < 7,
                     pkt.GetSrcIp().GetField<Ip, uint>("Value") < 7
                     ),
-                    pkt.GetDstIp() != pkt.GetSrcIp()
-                ),
-                result == false));
+                    pkt.GetDstIp() != pkt.GetSrcIp()),
+                    result == false),
+                    failed_links == failedLinks));
 
             Console.WriteLine("\tCount:\t" + input.Count());
             //Console.WriteLine();
@@ -98,12 +99,20 @@ namespace ZenRouting
         static void fullPathReachabilityWithCost(DVP dvp, int maxCost)
         {
             dvp.maxCost = maxCost;
-            fullPathReachability(dvp);
+            fullPathReachability(dvp, EmptyList<Tuple<int, int>>());
             dvp.cleanConstraints();
         }
 
         static void fullPathReachabilityWithoutCrossingNode(DVP dvp, Ip intermediateNodeIp)
         {
+            dvp.intermediateNode = intermediateNodeIp;
+            fullPathReachability(dvp, EmptyList<Tuple<int, int>>());
+            dvp.cleanConstraints();
+        }
+
+        static void fullPathReachabilityWithFailedLinks(DVP dvp)
+        {
+            
             dvp.intermediateNode = intermediateNodeIp;
             fullPathReachability(dvp);
             dvp.cleanConstraints();
