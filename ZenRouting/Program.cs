@@ -112,11 +112,20 @@ namespace ZenRouting
 
         static void fullPathReachabilityWithFailedLinks(DVP dvp)
         {
-            
-            dvp.intermediateNode = intermediateNodeIp;
-            fullPathReachability(dvp);
+			// Given failed links, find packets
+            // Create failedLinks
+
+			var failedLinks = EmptyList<Tuple<int, int>>();
+			failedLinks.Add(new Tuple<int, int>(0, 1))
+			failedLinks.Add(new Tuple<int, int>(5, 6))
+			fullPathReachability(dvp, failedLinks)
             dvp.cleanConstraints();
         }
+
+		static void fullPathReachabilityWithFailedLinks2(DVP dvp)
+		{
+			// TODO: do this
+		}
 
         static void Main(string[] args)
         {
