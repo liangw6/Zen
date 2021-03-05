@@ -39,13 +39,12 @@ namespace ZenRouting
             Console.WriteLine("printing single value");
             Console.WriteLine(input.Value);
         }
-
-        static void fullPathReachability(DVP dvp, Zen<IList<Tuple<int, int>>> failedLinks)
-        {
-            ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
+		
+		static void evaluateReachability(DVP dvp, IList<Tuple<int, int>> failedLinks = new List<Tuple<int, int>>())
+		{
+			ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
             f.Compile();
 
-            // 1. Evaluate
             Console.WriteLine("Evaluating output");
             var correct_input = new SimplePacket
             {
@@ -60,17 +59,24 @@ namespace ZenRouting
             };
 
             Console.WriteLine("Evaluating correct input: \t" + correct_input);
-            var output = f.Evaluate(correct_input, new List<Tuple<int, int>>());
+            var output = f.Evaluate(correct_input, failedLinks);
             Console.WriteLine("\t Reachable? " + output);
 
             Console.WriteLine("Evaluating wrong input: \t" + wrong_input);
-            output = f.Evaluate(wrong_input, new List<Tuple<int, int>>());
+            output = f.Evaluate(wrong_input, failedLinks);
             Console.WriteLine("\t Reachable? " + output);
             Console.WriteLine();
+		}
 
-            // 2. FindAll
-            Console.WriteLine("Using FindAll");
-            Console.WriteLine("Number of packets that cannot be delivered in the network:");
+        static void findPackets(DVP dvp, bool desired_result, IList<Tuple<int, int>> failedLinks)
+        {
+            Console.WriteLine("findPackets");
+
+            ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
+            f.Compile();
+
+            // Console.WriteLine("Using FindAll");
+            // Console.WriteLine("Number of packets that cannot be delivered in the network:");
             var input = f.FindAll((pkt, failed_links, result) => And(
                 And(
                     And(
@@ -79,13 +85,13 @@ namespace ZenRouting
                     pkt.GetSrcIp().GetField<Ip, uint>("Value") < 7
                     ),
                     pkt.GetDstIp() != pkt.GetSrcIp()),
-                    result == false),
+                    result == desired_result),
                     failed_links == failedLinks));
 
             Console.WriteLine("\tCount:\t" + input.Count());
             //Console.WriteLine();
-
             //Console.WriteLine(input);
+			
             if (input.Count() != 0)
             {
                 Console.WriteLine("\tPrinting inputs:");
@@ -96,64 +102,83 @@ namespace ZenRouting
             }
         }
 
-        static void fullPathReachabilityWithCost(DVP dvp, int maxCost)
+		static void findLinks(DVP dvp, bool desired_result, SimplePacket packet)
+		{
+			Console.WriteLine("findLinks");
+
+            ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
+            f.Compile();
+
+            // Console.WriteLine("Using FindAll");
+            // Console.WriteLine("Number of packets that cannot be delivered in the network:");
+            var input = f.FindAll((pkt, failed_links, result) => And(
+                And(
+                    And(
+                    And(
+                    pkt.GetDstIp().GetField<Ip, uint>("Value") = packet.GetDstIP().GetField<Ip, uint>("Value"),
+                    pkt.GetSrcIp().GetField<Ip, uint>("Value") = packet.GetSrcIP().GetField<Ip, uint>("Value")
+                    ),
+                    pkt.GetDstIp() != pkt.GetSrcIp()),
+                    result == desired_result),
+                    failed_links.Length() == 1));
+
+			// TODO: test this!!!
+
+            Console.WriteLine("\tCount:\t" + input.Count());
+            //Console.WriteLine();
+            //Console.WriteLine(input);
+			
+            if (input.Count() != 0)
+            {
+                Console.WriteLine("\tPrinting inputs:");
+                foreach (var x in input)
+                {
+                    Console.WriteLine("\t\t" + x);
+                }
+            }
+		}
+
+        static void findPacketsWithCost(DVP dvp, bool result, int maxCost)
         {
+			// Zen will only check paths under the maxCost
             dvp.maxCost = maxCost;
-            fullPathReachability(dvp, EmptyList<Tuple<int, int>>());
+            findPackets(dvp, result);
             dvp.cleanConstraints();
         }
 
-        static void fullPathReachabilityWithoutCrossingNode(DVP dvp, Ip intermediateNodeIp)
+        static void findPacketsWithIntermediateNode(DVP dvp, bool result, Ip intermediateNodeIp)
         {
+			// Zen will only check  paths w/o intermediateNode
             dvp.intermediateNode = intermediateNodeIp;
-            fullPathReachability(dvp, EmptyList<Tuple<int, int>>());
+            findPackets(dvp, result);
             dvp.cleanConstraints();
         }
 
-        static void fullPathReachabilityWithFailedLinks(DVP dvp)
+        static void findPacketsWithFailedLinks(DVP dvp, bool result)
         {
-			// Given failed links, find packets
-            // Create failedLinks
-
-			var failedLinks = EmptyList<Tuple<int, int>>();
+			var failedLinks = new List<Tuple<int, int>>();
 			failedLinks.Add(new Tuple<int, int>(0, 1))
 			failedLinks.Add(new Tuple<int, int>(5, 6))
-			fullPathReachability(dvp, failedLinks)
+
+			findPackets(dvp, result, failedLinks)
             dvp.cleanConstraints();
         }
 
-		static void fullPathReachabilityWithFailedLinks2(DVP dvp)
+		static void findFailedLinksWithPacket(DVP dvp, bool result)
 		{
-			// TODO: do this
+			var packet = new SimplePacket
+            {
+                SrcIp = new Ip { Value = 1 },
+                DstIp = new Ip { Value = 2 },
+            };			
+
+			findLinks(dvp, result, packet);
+			dvp.cleanConstraints();
 		}
 
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-
-            // ZenFunction<int, int, int> function = Function<int, int, int>(MultiplyAndAdd);
-            // var output = function.Evaluate(3, 2); // output = 11
-            // Console.WriteLine(output);
-
-            //ZenFunction<uint, uint> f = Function<uint, uint>(i => i + 1);
-
-            // create a set transformer from the function
-            //StateSetTransformer<uint, uint> t = f.Transformer();
-
-            // find the set of all inputs where the output is no more than 10,000
-            //StateSet<uint> inputSet = t.InputSet((x, y) => y <= 10000);
-            //StateSet<uint> outputSet = t.TransformForward(inputSet);
-
-            //Option<uint> example = inputSet.Element(); // example.Value = 0
-            //Console.WriteLine(example);
-
-            //var f = Function<IList<byte>, IList<byte>>(l => Sort(l));
-
-            //foreach (var list in f.GenerateInputs(listSize: 3))
-            //{
-            //Console.WriteLine($"[{string.Join(",", list)}]");
-            //}
-
 
             List<Tuple<int, int>> physicalEdges = new List<Tuple<int, int>>();
             physicalEdges.Add(new Tuple<int, int>(0, 1));
@@ -167,14 +192,18 @@ namespace ZenRouting
 
             DVP dvp = new DVP(physicalEdges);
 
-            Console.WriteLine("Init ");
+            Console.WriteLine("Init");
             Console.WriteLine(dvp);
 
             dvp.runDVP(5);
             Console.WriteLine(dvp);
 
-            //fullPathReachabilityWithCost(dvp, maxCost: 2);
-            fullPathReachabilityWithoutCrossingNode(dvp, new Ip { Value = 0 });
+			findPackets(dvp, true);
+			// findPacketsWithCost(dvp, true, maxCost: 2);
+			// findPacketsWithIntermediateNode(dvp, true, new Ip {Value = 0});
+
+			// findPacketsWithFailedLinks(dvp, true);
+			// findFailedLinksWithPacket(dvp, true);
         }
     }
 }
