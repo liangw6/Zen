@@ -220,7 +220,7 @@ namespace ZenRouting
 						{
 							
 							pathSet.Add(currRoute);
-							Console.WriteLine("Adding path " + nodes[i].Address + " " + nodes[j].Address);
+							// Console.WriteLine("Adding path " + nodes[i].Address + " " + nodes[j].Address);
 						}
 					}
                 }

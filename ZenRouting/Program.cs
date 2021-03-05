@@ -40,8 +40,13 @@ namespace ZenRouting
             Console.WriteLine(input.Value);
         }
 		
-		static void evaluateReachability(DVP dvp, IList<Tuple<int, int>> failedLinks = new List<Tuple<int, int>>())
+		static void evaluateReachability(DVP dvp, List<Tuple<int, int>> failedLinks = null)
 		{
+            if (failedLinks == null)
+            {
+                failedLinks = new List<Tuple<int, int>>();
+            }
+
 			ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
             f.Compile();
 
@@ -68,8 +73,13 @@ namespace ZenRouting
             Console.WriteLine();
 		}
 
-        static void findPackets(DVP dvp, bool desired_result, IList<Tuple<int, int>> failedLinks)
+        static void findPackets(DVP dvp, bool desired_result, List<Tuple<int, int>> failedLinks = null)
         {
+            if (failedLinks == null)
+            {
+                failedLinks = new List<Tuple<int, int>>();
+            }
+
             Console.WriteLine("findPackets");
 
             ZenFunction<SimplePacket, IList<Tuple<int, int>> , bool> f = Function<SimplePacket, IList<Tuple<int, int>>, bool>(dvp.Forward);
@@ -77,6 +87,7 @@ namespace ZenRouting
 
             // Console.WriteLine("Using FindAll");
             // Console.WriteLine("Number of packets that cannot be delivered in the network:");
+            Console.WriteLine(failedLinks);
             var input = f.FindAll((pkt, failed_links, result) => And(
                 And(
                     And(
@@ -115,8 +126,8 @@ namespace ZenRouting
                 And(
                     And(
                     And(
-                    pkt.GetDstIp().GetField<Ip, uint>("Value") = packet.GetDstIP().GetField<Ip, uint>("Value"),
-                    pkt.GetSrcIp().GetField<Ip, uint>("Value") = packet.GetSrcIP().GetField<Ip, uint>("Value")
+                    pkt.GetDstIp().GetField<Ip, uint>("Value") == packet.DstIp.Value,
+                    pkt.GetSrcIp().GetField<Ip, uint>("Value") == packet.SrcIp.Value
                     ),
                     pkt.GetDstIp() != pkt.GetSrcIp()),
                     result == desired_result),
@@ -157,10 +168,10 @@ namespace ZenRouting
         static void findPacketsWithFailedLinks(DVP dvp, bool result)
         {
 			var failedLinks = new List<Tuple<int, int>>();
-			failedLinks.Add(new Tuple<int, int>(0, 1))
-			failedLinks.Add(new Tuple<int, int>(5, 6))
+            failedLinks.Add(new Tuple<int, int>(0, 1));
+            failedLinks.Add(new Tuple<int, int>(5, 6));
 
-			findPackets(dvp, result, failedLinks)
+            findPackets(dvp, result, failedLinks);
             dvp.cleanConstraints();
         }
 
@@ -198,12 +209,14 @@ namespace ZenRouting
             dvp.runDVP(5);
             Console.WriteLine(dvp);
 
-			findPackets(dvp, true);
-			// findPacketsWithCost(dvp, true, maxCost: 2);
-			// findPacketsWithIntermediateNode(dvp, true, new Ip {Value = 0});
+            // evaluateReachability(dvp);
 
-			// findPacketsWithFailedLinks(dvp, true);
-			// findFailedLinksWithPacket(dvp, true);
+            // findPackets(dvp, false);
+            // findPacketsWithCost(dvp, false, maxCost: 2);
+            // findPacketsWithIntermediateNode(dvp, false, new Ip {Value = 0});
+
+            findPacketsWithFailedLinks(dvp, true);
+            // findFailedLinksWithPacket(dvp, true);
         }
     }
 }
