@@ -257,7 +257,8 @@ namespace ZenRouting
 
 				// want to use path[i], path[i+1] to check failedLinks to see if link between them is failed. Use this condition to set x
 				var linkOK = Not(Or(failedLinks.Contains(new Tuple<int, int>(path[i], path[i+1])), failedLinks.Contains(new Tuple<int, int>(path[i+1], path[i]))));
-				x = If(And(x.HasValue(), linkOK), currNode.ForwardInAndOut(x.Value(), nextNode.Address), x);
+				x = If(linkOK, x, Null<SimplePacket>());
+				x = If(x.HasValue(), currNode.ForwardInAndOut(x.Value(), nextNode.Address), x);
             }
 			return x;
         }

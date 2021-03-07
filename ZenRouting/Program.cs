@@ -169,7 +169,7 @@ namespace ZenRouting
         {
 			var failedLinks = new List<Tuple<int, int>>();
             failedLinks.Add(new Tuple<int, int>(0, 1));
-            failedLinks.Add(new Tuple<int, int>(5, 6));
+            //failedLinks.Add(new Tuple<int, int>(5, 6));
 
             findPackets(dvp, result, failedLinks);
             dvp.cleanConstraints();
@@ -211,11 +211,11 @@ namespace ZenRouting
 
             // evaluateReachability(dvp);
 
-            // findPackets(dvp, false);
+            //findPackets(dvp, true);
             // findPacketsWithCost(dvp, false, maxCost: 2);
             // findPacketsWithIntermediateNode(dvp, false, new Ip {Value = 0});
 
-            findPacketsWithFailedLinks(dvp, true);
+            findPacketsWithFailedLinks(dvp, false);
             // findFailedLinksWithPacket(dvp, true);
         }
     }
