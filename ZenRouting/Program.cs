@@ -131,9 +131,9 @@ namespace ZenRouting
                     ),
                     pkt.GetDstIp() != pkt.GetSrcIp()),
                     result == desired_result),
+                // For DVP, no route requires more then two links to fail (no multiple path routing)
+                // Therefore, we limit length to 1 here
                     failed_links.Length() == 1));
-
-			// TODO: test this!!!
 
             Console.WriteLine("\tCount:\t" + input.Count());
             //Console.WriteLine();
@@ -144,7 +144,12 @@ namespace ZenRouting
                 Console.WriteLine("\tPrinting inputs:");
                 foreach (var x in input)
                 {
-                    Console.WriteLine("\t\t" + x);
+                    Console.Write("\t\t" + x.Item1 + " with List [");
+                    foreach (var i in x.Item2)
+                    {
+                        Console.Write(i + ", ");
+                    }
+                    Console.WriteLine("]");
                 }
             }
 		}
@@ -169,7 +174,7 @@ namespace ZenRouting
         {
 			var failedLinks = new List<Tuple<int, int>>();
             failedLinks.Add(new Tuple<int, int>(0, 1));
-            //failedLinks.Add(new Tuple<int, int>(5, 6));
+            failedLinks.Add(new Tuple<int, int>(5, 6));
 
             findPackets(dvp, result, failedLinks);
             dvp.cleanConstraints();
@@ -179,8 +184,8 @@ namespace ZenRouting
 		{
 			var packet = new SimplePacket
             {
-                SrcIp = new Ip { Value = 1 },
-                DstIp = new Ip { Value = 2 },
+                SrcIp = new Ip { Value = 6 },
+                DstIp = new Ip { Value = 1 },
             };			
 
 			findLinks(dvp, result, packet);
@@ -215,8 +220,8 @@ namespace ZenRouting
             // findPacketsWithCost(dvp, false, maxCost: 2);
             // findPacketsWithIntermediateNode(dvp, false, new Ip {Value = 0});
 
-            findPacketsWithFailedLinks(dvp, false);
-            // findFailedLinksWithPacket(dvp, true);
+            //findPacketsWithFailedLinks(dvp, false);
+            findFailedLinksWithPacket(dvp, false);
         }
     }
 }
