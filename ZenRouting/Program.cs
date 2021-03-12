@@ -192,6 +192,24 @@ namespace ZenRouting
 			dvp.cleanConstraints();
 		}
 
+        static Zen<IList<T>> Sort<T>(Zen<IList<T>> expr)
+        {
+            return expr.Case(empty: EmptyList<T>(), cons: (hd, tl) => Insert(hd, Sort(tl)));
+        }
+
+        static Zen<IList<T>> Insert<T>(Zen<T> elt, Zen<IList<T>> list)
+        {
+            return list.Case(
+                empty: Language.Singleton(elt),
+                cons: (hd, tl) => If(elt <= hd, list.AddFront(elt), Insert(elt, tl).AddFront(hd)));
+        }
+
+        // 0 - 1 - 2 (0 - 2)
+        static Zen<bool> Simple_CPV (Zen<IList<int>> costs)
+        {
+            return And(And(costs.At(0).Value() == 0, costs.At(2).Value() == 1), costs.Length() == 3);
+        }
+
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
@@ -221,7 +239,51 @@ namespace ZenRouting
             // findPacketsWithIntermediateNode(dvp, false, new Ip {Value = 0});
 
             //findPacketsWithFailedLinks(dvp, false);
-            findFailedLinksWithPacket(dvp, false);
+            // findFailedLinksWithPacket(dvp, false);
+
+
+            var f = Function<IList<byte>, IList<byte>>(l => Sort(l));
+            var input = f.Find((inlist, outlist) => inlist.Length() != outlist.Length());
+            Console.WriteLine("Zen list input " + input);
+
+            f = Function<IList<byte>, IList<byte>>(Sort);
+            input = f.Find((inlist, outlist) => inlist.Length() != outlist.Length());
+            Console.WriteLine("Second Zen list input " + input);
+
+
+            var f2 = Function<IList<int>, bool>(Simple_CPV);
+
+
+            // NOTE: This does not work, don't know whhy (possibly the ifs?)
+            var input2 = f2.Find((costs, results) => And(results == true,
+                And(And(costs.At(0).Value() == Min(costs.At(1).Value() + 1, costs.At(2).Value() + 1),
+                costs.At(1).Value() == Min(costs.At(0).Value() + 1, costs.At(2).Value() + 1)),
+                costs.At(2).Value() == Min(costs.At(1).Value() + 1, costs.At(0).Value() + 1))));
+
+            // NOTE: This works. we'll do it this way
+            /*
+            var input2 = f2.Find((costs, result) => And(result == true,
+                And(And(And(And(costs.At(0).Value() <= costs.At(1).Value() + 1), costs.At(1).Value() <= costs.At(2).Value() + 1),
+                And(And(costs.At(1).Value() <= costs.At(0).Value() + 1), costs.At(1).Value() <= costs.At(2).Value() + 1)),
+                And(And(costs.At(2).Value() <= costs.At(0).Value() + 1), costs.At(1).Value() <= costs.At(1).Value() + 1))));
+            */
+            Console.WriteLine("Control plane!");
+            Console.WriteLine(input2.Value);
+            Console.WriteLine("Has Value: " + input2.HasValue);
+            if (input2.HasValue) {
+                foreach (var x in input2.Value)
+                {
+                    Console.WriteLine(x);
+                    //Console.Write("\t\t" + x + " with List [");
+                    /*foreach (var i in x)
+                    {
+                        Console.Write(i + ", ");
+                    }*/
+                    //Console.WriteLine("]");
+                }
+            }
+            
+
         }
     }
 }
