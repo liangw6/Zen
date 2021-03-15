@@ -12,7 +12,7 @@ namespace ZenRouting
 	public class DVP_verify
 	{
 
-		Zen<IList> costs;
+		// Zen<IList> costs;
 
 		public DVP_verify()
 		{

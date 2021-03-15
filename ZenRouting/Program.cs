@@ -205,16 +205,72 @@ namespace ZenRouting
         }
 
         // 0 - 1 - 2 (0 - 2)
+        // The function encodes the property we want to verify
         static Zen<bool> Simple_CPV (Zen<IList<int>> costs)
         {
-            return And(And(costs.At(0).Value() == 0, costs.At(2).Value() == 1), costs.Length() == 3);
+            
+            return And(And(costs.At(0).Value() == 0, costs.At(2).Value() <= GlobalVar.MAX_HOPS), costs.Length() == 3);
+        }
+
+        static Zen<bool> Build_Network(Zen<IList<int>> costs, List<Tuple<int, int>> physicalEdges, int dst_node)
+        {
+            Dictionary<int, HashSet<int>> node2neighbors = new Dictionary<int, HashSet<int>>();
+            //// dst_node needs to be set 0
+            foreach (Tuple<int, int> edge in physicalEdges)
+            {
+                var (i, j) = edge;
+                if (!node2neighbors.ContainsKey(i))
+                {
+                    node2neighbors[i] = new HashSet<int>();
+                }
+                node2neighbors[i].Add(j);
+
+                if (!node2neighbors.ContainsKey(j))
+                {
+                    node2neighbors[j] = new HashSet<int>();
+                }
+                node2neighbors[j].Add(i);
+            }
+
+            Zen<bool> network_expr = True();
+            foreach (KeyValuePair<int, HashSet<int>> kvp in node2neighbors)
+            {
+                // costs.At(1).Value() == Min(costs.At(0).Value() + 1, costs.At(2).Value() + 1),
+                Zen<ushort> i = (Zen<ushort>) kvp.Key;
+                // this is just i, but it doesn't allow me to cast -_-
+                if (kvp.Key == dst_node)
+                {
+                    continue;
+                }
+                Console.Write(kvp.Key + ": [");
+                
+                Zen<bool> lower_limit_expr = True();
+                foreach (Zen<ushort> j in kvp.Value)
+                {
+                    Console.Write(j + ", ");
+                    lower_limit_expr = And(lower_limit_expr, costs.At(i).Value() <= costs.At(j).Value() + 1);
+                }
+
+                Zen<bool> upper_limit_expr = True();
+                foreach (Zen<ushort> j in kvp.Value)
+                {
+                    upper_limit_expr = Or(upper_limit_expr, costs.At(i).Value() >= costs.At(j).Value() + 1);
+                }
+                Console.WriteLine("]");
+
+                network_expr = And(network_expr, And(lower_limit_expr, upper_limit_expr));
+            }
+            Console.WriteLine("physical edges" + physicalEdges.Count());
+            Console.WriteLine("Network Expression " + network_expr);
+            return network_expr;
+
         }
 
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
 
-            List<Tuple<int, int>> physicalEdges = new List<Tuple<int, int>>();
+           /* List<Tuple<int, int>> physicalEdges = new List<Tuple<int, int>>();
             physicalEdges.Add(new Tuple<int, int>(0, 1));
             physicalEdges.Add(new Tuple<int, int>(0, 2));
             physicalEdges.Add(new Tuple<int, int>(0, 4));
@@ -231,6 +287,7 @@ namespace ZenRouting
 
             dvp.runDVP(5);
             Console.WriteLine(dvp);
+           */
 
             // evaluateReachability(dvp);
 
@@ -250,39 +307,70 @@ namespace ZenRouting
             input = f.Find((inlist, outlist) => inlist.Length() != outlist.Length());
             Console.WriteLine("Second Zen list input " + input);
 
-
+            // Step 1. Encode the property we want to verify
             var f2 = Function<IList<int>, bool>(Simple_CPV);
 
 
-            // NOTE: This does not work, don't know whhy (possibly the ifs?)
-            var input2 = f2.Find((costs, results) => And(results == true,
-                And(And(costs.At(0).Value() == Min(costs.At(1).Value() + 1, costs.At(2).Value() + 1),
-                costs.At(1).Value() == Min(costs.At(0).Value() + 1, costs.At(2).Value() + 1)),
-                costs.At(2).Value() == Min(costs.At(1).Value() + 1, costs.At(0).Value() + 1))));
+            // NOTE: This does not work (evaluating to false even when there is a true assignemnt)
+            // Guess: this uses checks, not constraints 
+            /*var input2 = f2.FindAll((costs, results) => And(results == true,
+                And(
+                    // Constraint to the source node -> not work
+                    //And(costs.At(0).Value() == Min(costs.At(1).Value() + 1, costs.At(2).Value() + 1),
+                costs.At(1).Value() == Min(costs.At(0).Value() + 1, costs.At(2).Value() + 1),
+                costs.At(2).Value() == Min(costs.At(1).Value() + 1, costs.At(0).Value() + 1))
+                ));*/
+
+            var physicalEdges = new List<Tuple<int, int>>();
+            physicalEdges.Add(new Tuple<int, int>(0, 1));
+            physicalEdges.Add(new Tuple<int, int>(0, 2));
+            physicalEdges.Add(new Tuple<int, int>(1, 2));
+            var input2 = f2.FindAll((costs, results) => And(results == true, Build_Network(costs, physicalEdges, 0)));
 
             // NOTE: This works. we'll do it this way
-            /*
-            var input2 = f2.Find((costs, result) => And(result == true,
-                And(And(And(And(costs.At(0).Value() <= costs.At(1).Value() + 1), costs.At(1).Value() <= costs.At(2).Value() + 1),
-                And(And(costs.At(1).Value() <= costs.At(0).Value() + 1), costs.At(1).Value() <= costs.At(2).Value() + 1)),
-                And(And(costs.At(2).Value() <= costs.At(0).Value() + 1), costs.At(1).Value() <= costs.At(1).Value() + 1))));
-            */
+
+            // Step 2. Encode the constraints enforced by the topology of the network
+            /*var input2 = f2.FindAll((costs, result) => And(result == true, // a control plane that works (true) / not works (false)
+                And(
+                    And(
+                        And(
+                                costs.At(0).Value() <= costs.At(1).Value() + 1, costs.At(0).Value() <= costs.At(2).Value() + 1
+                                //Or(costs.At(0).Value() >= costs.At(1).Value() + 1, costs.At(0).Value() >= costs.At(2).Value() + 1)
+                            ),
+                        And(
+                            And(costs.At(1).Value() <= costs.At(0).Value() + 1, costs.At(1).Value() <= costs.At(2).Value() + 1),
+                            Or(costs.At(1).Value() >= costs.At(0).Value() + 1, costs.At(1).Value() >= costs.At(2).Value() + 1)
+                            )
+                        ),
+                    And(
+                        And(costs.At(2).Value() <= costs.At(0).Value() + 1, costs.At(2).Value() <= costs.At(1).Value() + 1),
+                        Or(costs.At(2).Value() >= costs.At(0).Value() + 1, costs.At(2).Value() >= costs.At(1).Value() + 1)
+                        )
+                    )
+                )
+            );*/
+
             Console.WriteLine("Control plane!");
-            Console.WriteLine(input2.Value);
-            Console.WriteLine("Has Value: " + input2.HasValue);
-            if (input2.HasValue) {
-                foreach (var x in input2.Value)
+            //Console.WriteLine(input2.Value);
+            //Console.WriteLine("Has Value: " + input2.HasValue);
+            Console.WriteLine("\tCount:\t" + input2.Count());
+            //Console.WriteLine();
+            //Console.WriteLine(input);
+
+            if (input2.Count() != 0)
+            {
+                Console.WriteLine("\tPrinting inputs:");
+                foreach (var x in input2)
                 {
-                    Console.WriteLine(x);
-                    //Console.Write("\t\t" + x + " with List [");
-                    /*foreach (var i in x)
+                    Console.Write("\t\t with List [");
+                    foreach (var i in x)
                     {
                         Console.Write(i + ", ");
-                    }*/
-                    //Console.WriteLine("]");
+                    }
+                    Console.WriteLine("]");
                 }
             }
-            
+
 
         }
     }
