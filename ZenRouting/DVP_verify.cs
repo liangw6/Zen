@@ -11,55 +11,78 @@ namespace ZenRouting
 {
 	public class DVP_verify
 	{
+        // Each DVP_Verify is a fixed topology with property
+        List<Tuple<int, int>> physicalEdges;
+        int dst_node;
+        Dictionary<int, HashSet<int>> node2neighbors;
 
-		// Zen<IList> costs;
 
-		public DVP_verify()
+        public DVP_verify(List<Tuple<int, int>> physicalEdges, int dst_node)
 		{
-		}
-
-	// 	// each cost in costs corresponds to a node
-	// 	public Zen<IList> buildNetwork(edges or None)
-	// 	{
-	// 		for each edge in edges
-	// 			add the nodes to a ZenSet
-
-	// 		then for each node in the ZenSet
-	// 			find its neighbors
-	// 			and put it into a map?
-
-	// 		once we have nodes and neighbors map
-	// 		costs = {c1 = min(), c2 = min(...), ...)
-	// 		create n (num ofnodes) Zen Expressions like
-	// 			c1 = min(c2 + ..., ...)
-	// 			
-
-	// 		return boolean expression expressing the cost constraints
-	// 	}
-
-	// 	buildNetwork.findall((costs, results) => propertyX(costs))
-
-	// 		void buildNetwork(Zen<IList> costs) {
-	// 			cost[0] = ...
-	// 				cost[1] = ...
-	// 				...
-	// 		}
-
-	// 		// can 1 reach 4
-	// 		propertyX(Zen<IList> costs) {
-	// 			cost[4] == 0 AND cost[1] == INF
-	// 		}
-
-	// 	------------------------------
+            this.physicalEdges = physicalEdges;
+            this.dst_node = dst_node;
+            this.node2neighbors = new Dictionary<int, HashSet<int>>();
 
 
-	// 	propertyX.findall((costs, result) => buildNetwork(costs) and result == true)
-	// 		bool buildNetowrk(Zen<IList> costs) {
-	// 			c.length == 9 AND c[0]==min(c1...) AND c[1]==min(c2...)..
+            foreach (Tuple<int, int> edge in physicalEdges)
+            {
+                var (i, j) = edge;
+                if (!node2neighbors.ContainsKey(i))
+                {
+                    node2neighbors[i] = new HashSet<int>();
+                }
+                node2neighbors[i].Add(j);
 
-	// 		bool propertyX(costs)
-	// 			cost[4] == 0 AND ...
+                if (!node2neighbors.ContainsKey(j))
+                {
+                    node2neighbors[j] = new HashSet<int>();
+                }
+                node2neighbors[j].Add(i);
+            }
+        }
 
-	}
+        public Zen<bool> Build_Network(Zen<IList<int>> costs)
+        {
+            Zen<bool> network_expr = True();
+            foreach (KeyValuePair<int, HashSet<int>> kvp in node2neighbors)
+            {
+                // costs.At(1).Value() == Min(costs.At(0).Value() + 1, costs.At(2).Value() + 1),
+                Zen<ushort> i = (Zen<ushort>)kvp.Key;
+                // this is just i, but it doesn't allow me to cast -_-
+                if (kvp.Key == dst_node)
+                {
+                    continue;
+                }
+                Console.Write(kvp.Key + ": [");
+
+                Zen<bool> lower_limit_expr = True();
+                foreach (Zen<ushort> j in kvp.Value)
+                {
+                    Console.Write(j + ", ");
+                    lower_limit_expr = And(lower_limit_expr, costs.At(i).Value() <= costs.At(j).Value() + 1);
+                }
+
+                Zen<bool> upper_limit_expr = False();
+                foreach (Zen<ushort> j in kvp.Value)
+                {
+                    upper_limit_expr = Or(upper_limit_expr, costs.At(i).Value() >= costs.At(j).Value() + 1);
+                }
+                Console.WriteLine("]");
+
+                network_expr = And(network_expr, And(lower_limit_expr, upper_limit_expr));
+            }
+            Console.WriteLine("physical edges" + physicalEdges.Count);
+            Console.WriteLine("Network Expression " + network_expr);
+            return network_expr;
+        }
+
+        // 0 - 1 - 2 (0 - 2)
+        // The function encodes the property we want to verify
+        public Zen<bool> Simple_CPV(Zen<IList<int>> costs, int src_node)
+        {
+            return And(And(costs.At((Zen<ushort>)this.dst_node).Value() == 0, costs.At((Zen<ushort>)src_node).Value() <= GlobalVar.MAX_HOPS), costs.Length() == 7);
+        }
+
+    }
 }
 

@@ -192,85 +192,11 @@ namespace ZenRouting
 			dvp.cleanConstraints();
 		}
 
-        static Zen<IList<T>> Sort<T>(Zen<IList<T>> expr)
-        {
-            return expr.Case(empty: EmptyList<T>(), cons: (hd, tl) => Insert(hd, Sort(tl)));
-        }
-
-        static Zen<IList<T>> Insert<T>(Zen<T> elt, Zen<IList<T>> list)
-        {
-            return list.Case(
-                empty: Language.Singleton(elt),
-                cons: (hd, tl) => If(elt <= hd, list.AddFront(elt), Insert(elt, tl).AddFront(hd)));
-        }
-
-        // 0 - 1 - 2 (0 - 2)
-        // The function encodes the property we want to verify
-        static Zen<bool> Simple_CPV (Zen<IList<int>> costs)
-        {
-            
-            return And(And(costs.At(0).Value() == 0, costs.At(2).Value() <= GlobalVar.MAX_HOPS), costs.Length() == 3);
-        }
-
-        static Zen<bool> Build_Network(Zen<IList<int>> costs, List<Tuple<int, int>> physicalEdges, int dst_node)
-        {
-            Dictionary<int, HashSet<int>> node2neighbors = new Dictionary<int, HashSet<int>>();
-            //// dst_node needs to be set 0
-            foreach (Tuple<int, int> edge in physicalEdges)
-            {
-                var (i, j) = edge;
-                if (!node2neighbors.ContainsKey(i))
-                {
-                    node2neighbors[i] = new HashSet<int>();
-                }
-                node2neighbors[i].Add(j);
-
-                if (!node2neighbors.ContainsKey(j))
-                {
-                    node2neighbors[j] = new HashSet<int>();
-                }
-                node2neighbors[j].Add(i);
-            }
-
-            Zen<bool> network_expr = True();
-            foreach (KeyValuePair<int, HashSet<int>> kvp in node2neighbors)
-            {
-                // costs.At(1).Value() == Min(costs.At(0).Value() + 1, costs.At(2).Value() + 1),
-                Zen<ushort> i = (Zen<ushort>) kvp.Key;
-                // this is just i, but it doesn't allow me to cast -_-
-                if (kvp.Key == dst_node)
-                {
-                    continue;
-                }
-                Console.Write(kvp.Key + ": [");
-                
-                Zen<bool> lower_limit_expr = True();
-                foreach (Zen<ushort> j in kvp.Value)
-                {
-                    Console.Write(j + ", ");
-                    lower_limit_expr = And(lower_limit_expr, costs.At(i).Value() <= costs.At(j).Value() + 1);
-                }
-
-                Zen<bool> upper_limit_expr = True();
-                foreach (Zen<ushort> j in kvp.Value)
-                {
-                    upper_limit_expr = Or(upper_limit_expr, costs.At(i).Value() >= costs.At(j).Value() + 1);
-                }
-                Console.WriteLine("]");
-
-                network_expr = And(network_expr, And(lower_limit_expr, upper_limit_expr));
-            }
-            Console.WriteLine("physical edges" + physicalEdges.Count());
-            Console.WriteLine("Network Expression " + network_expr);
-            return network_expr;
-
-        }
-
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
 
-           /* List<Tuple<int, int>> physicalEdges = new List<Tuple<int, int>>();
+            List<Tuple<int, int>> physicalEdges = new List<Tuple<int, int>>();
             physicalEdges.Add(new Tuple<int, int>(0, 1));
             physicalEdges.Add(new Tuple<int, int>(0, 2));
             physicalEdges.Add(new Tuple<int, int>(0, 4));
@@ -279,7 +205,7 @@ namespace ZenRouting
             physicalEdges.Add(new Tuple<int, int>(2, 3));
             physicalEdges.Add(new Tuple<int, int>(3, 6));
             physicalEdges.Add(new Tuple<int, int>(5, 6));
-
+            /*
             DVP dvp = new DVP(physicalEdges);
 
             Console.WriteLine("Init");
@@ -299,16 +225,16 @@ namespace ZenRouting
             // findFailedLinksWithPacket(dvp, false);
 
 
-            var f = Function<IList<byte>, IList<byte>>(l => Sort(l));
+            /*var f = Function<IList<byte>, IList<byte>>(l => Sort(l));
             var input = f.Find((inlist, outlist) => inlist.Length() != outlist.Length());
             Console.WriteLine("Zen list input " + input);
 
             f = Function<IList<byte>, IList<byte>>(Sort);
             input = f.Find((inlist, outlist) => inlist.Length() != outlist.Length());
-            Console.WriteLine("Second Zen list input " + input);
+            Console.WriteLine("Second Zen list input " + input);*/
 
             // Step 1. Encode the property we want to verify
-            var f2 = Function<IList<int>, bool>(Simple_CPV);
+            //var f2 = Function<IList<int>, bool>(Simple_CPV);
 
 
             // NOTE: This does not work (evaluating to false even when there is a true assignemnt)
@@ -321,11 +247,16 @@ namespace ZenRouting
                 costs.At(2).Value() == Min(costs.At(1).Value() + 1, costs.At(0).Value() + 1))
                 ));*/
 
-            var physicalEdges = new List<Tuple<int, int>>();
+            /*var physicalEdges = new List<Tuple<int, int>>();
             physicalEdges.Add(new Tuple<int, int>(0, 1));
             physicalEdges.Add(new Tuple<int, int>(0, 2));
-            physicalEdges.Add(new Tuple<int, int>(1, 2));
-            var input2 = f2.FindAll((costs, results) => And(results == true, Build_Network(costs, physicalEdges, 0)));
+            physicalEdges.Add(new Tuple<int, int>(1, 2));*/
+
+            DVP_verify verifier = new DVP_verify(physicalEdges, 0);
+            var f2 = Function<IList<int>, bool>(verifier.Build_Network);
+            var input2 = f2.FindAll((costs, results) => And(results == true, verifier.Simple_CPV(costs, 3)), listSize: 7);
+
+            // var input2 = f2.FindAll((costs, results) => And(results == true, Build_Network(costs, physicalEdges, 0)), listSize: 7);
 
             // NOTE: This works. we'll do it this way
 
